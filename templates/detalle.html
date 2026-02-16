@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row g-5">
+
+        <div class="col-md-4 col-lg-3">
+            <div class="sticky-top" style="top: 20px; z-index: 1;">
+                {% if elemento.imagen_url %}
+                <img src="{{ elemento.imagen_url }}"
+                     class="img-fluid rounded-3 shadow-lg mb-4 w-100"
+                     alt="{{ elemento.titulo }}"
+                     style="object-fit: cover;">
+                {% else %}
+                <div class="bg-light rounded-3 shadow-lg d-flex justify-content-center align-items-center mb-4"
+                     style="height: 400px;">
+                    <span class="fs-1 text-muted">🎬</span>
+                </div>
+                {% endif %}
+
+                <div class="card border-0 bg-light shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3">Ficha Técnica</h6>
+                        <div class="mb-2">
+                            <span class="d-block small text-muted">Director</span>
+                            <span class="fw-bold text-dark">{{ elemento.director|default:"Desc." }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="d-block small text-muted">Año</span>
+                            <span class="fw-bold text-dark">{{ elemento.anio }}</span>
+                        </div>
+                        <div class="mb-0">
+                            <span class="d-block small text-muted">Género</span>
+                            <span class="badge bg-primary">{{ elemento.categoria.nombre|default:"Sin cat." }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if user.is_authenticated %}
+                <div class="d-grid">
+                    <button class="btn btn-outline-danger shadow-sm fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRanking">
+                        ❤️ Añadir a mis listas
+                    </button>
+                    <div class="collapse mt-2" id="collapseRanking">
+                        <div class="card card-body p-2 border-danger-subtle bg-danger-subtle">
+                            <form action="{% url 'agregar_a_ranking' elemento.id %}" method="post">
+                                {% csrf_token %}
+                                <label class="small text-muted mb-1">Elige una lista:</label>
+                                <select name="ranking_id" class="form-select form-select-sm mb-2" required>
+                                    <option value="" disabled selected>Seleccionar...</option>
+                                    {% for r in user_rankings %}
+                                    <option value="{{ r.id }}">{{ r.nombre }}</option>
+                                    {% endfor %}
+                                    {% if not user_rankings %}
+                                    <option value="" disabled>Crea una lista primero</option>
+                                    {% endif %}
+                                </select>
+                                <button type="submit" class="btn btn-dark btn-sm w-100">Guardar</button>
+                                <a href="{% url 'mis_rankings' %}" class="d-block text-center small mt-2 text-decoration-none">Gestionar listas</a>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-8 col-lg-9">
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <span class="badge bg-secondary mb-2">{{ elemento.get_tipo_display }}</span>
+                    <h1 class="fw-bold display-5 mb-0">{{ elemento.titulo }}</h1>
+                </div>
+                <div class="text-center ms-3">
+                    <div class="bg-warning text-dark rounded-3 px-3 py-2 shadow-sm">
+                        <span class="d-block small fw-bold text-uppercase">Nota</span>
+                        <span class="fs-2 fw-black">★ {{ promedio|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <h4 class="h5 fw-bold border-bottom pb-2 mb-3">Sinopsis</h4>
+                <p class="lead text-secondary" style="line-height: 1.8;">
+                    {{ elemento.descripcion }}
+                </p>
+                <div class="mt-3">
+                    <span class="fw-bold text-dark">Reparto: </span>
+                    <span class="text-muted fst-italic">{{ elemento.actores|default:"No especificado" }}</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3 p-4 shadow-sm border mb-5" id="seccion-comentarios">
+                <h3 class="fw-bold mb-4">Opiniones de la Comunidad</h3>
+
+                {% if user.is_authenticated %}
+                <div class="card bg-light border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-3">
+                            {% if mi_valoracion %}
+                            ✏️ Edita tu valoración
+                            {% else %}
+                            ⭐ ¿Has visto este título? ¡Valóralo!
+                            {% endif %}
+                        </h5>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    {{ form.puntuacion }}
+                                </div>
+                                <div class="col-md-12">
+                                    {{ form.comentario }}
+                                </div>
+                                <div class="col-12 text-end">
+                                    <button type="submit" class="btn btn-primary px-4 fw-bold">
+                                        {% if mi_valoracion %}Actualizar{% else %}Publicar Reseña{% endif %}
+                                        <i class="bi bi-send-fill ms-1"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {% else %}
+                <div class="alert alert-secondary d-flex align-items-center p-4 border-0 rounded-3" role="alert">
+                    <div class="fs-1 me-4">🔒</div>
+                    <div>
+                        <h4 class="alert-heading fw-bold">Inicia sesión para opinar</h4>
+                        <p class="mb-0">
+                            Solo los usuarios registrados pueden puntuar y comentar.
+                            <a href="{% url 'login' %}?next={{ request.path }}" class="fw-bold text-decoration-none text-primary stretched-link">
+                                Entra aquí con tu cuenta
+                            </a>.
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="mt-4">
+                    {% for val in valoraciones %}
+                    <div class="d-flex border-bottom py-3">
+                        <div class="flex-shrink-0 me-3">
+                            <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold shadow-sm"
+                                 style="width: 45px; height: 45px; font-size: 1.2rem;">
+                                {{ val.usuario_id|default:"?" }}
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold mb-0">
+                                    Usuario #{{ val.usuario_id }}
+                                    {% if user.id == val.usuario_id %}
+                                    <span class="badge bg-info text-dark ms-2" style="font-size: 0.6rem;">TÚ</span>
+                                    {% endif %}
+                                </h6>
+                                <span class="badge {% if val.puntuacion >= 4 %}bg-success{% elif val.puntuacion >= 3 %}bg-warning text-dark{% else %}bg-danger{% endif %} border">
+                                    ★ {{ val.puntuacion }}/5
+                                </span>
+                            </div>
+                            <p class="mb-1 text-secondary">{{ val.comentario }}</p>
+                            <small class="text-muted" style="font-size: 0.75rem;">
+                                {{ val.fecha|date:"d M Y, H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <p class="text-muted fs-5">Aún no hay valoraciones.</p>
+                        {% if user.is_authenticated %}
+                        <p class="text-primary fw-bold">¡Sé el primero en comentar!</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,53 +1,82 @@
-from django.db import models
-from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator
+from mongoengine import Document, StringField, IntField, URLField, DateTimeField, ReferenceField, ListField, CASCADE
+import datetime
 
 # 1. Modelo de CATEGORÍAS
-class Categoria(models.Model):
-    nombre = models.CharField(max_length=100, unique=True)
-    descripcion = models.TextField(blank=True, null=True)
+class Categoria(Document):
+    # En Mongo, CharField y TextField son lo mismo: StringField
+    nombre = StringField(max_length=100, unique=True, required=True)
+    descripcion = StringField()
 
     def __str__(self):
         return self.nombre
 
-    class Meta:
-        verbose_name_plural = "Categorías"
-
 # 2. Modelo de ELEMENTOS (Películas/Series)
-class Elemento(models.Model):
-    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='elementos')
-    titulo = models.CharField(max_length=200)
-    anio = models.IntegerField(verbose_name="Año de lanzamiento")
-    descripcion = models.TextField(verbose_name="Sinopsis")
-    imagen_url = models.URLField(blank=True, null=True, verbose_name="URL del Póster")
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+class Elemento(Document):
+    # ReferenceField es el equivalente a ForeignKey
+    # reverse_delete_rule=CASCADE borra la peli si borras la categoría
+    categoria = ReferenceField(Categoria, reverse_delete_rule=CASCADE)
+
+    titulo = StringField(max_length=200, required=True)
+    anio = IntField(verbose_name="Año de lanzamiento")
+    descripcion = StringField(verbose_name="Sinopsis")
+    imagen_url = URLField(verbose_name="URL del Póster")
+
+    # auto_now_add se hace con default=datetime.datetime.now
+    fecha_creacion = DateTimeField(default=datetime.datetime.now)
+
+    director = StringField(default="Desconocido")
+    actores = StringField(default="Varios")
+
+    orden = IntField(default=0)  # Nuevo campo para el ranking
+
+    # Las choices funcionan igual
+    TIPO_CHOICES = (
+        ('P', 'Película'),
+        ('S', 'Serie'),
+    )
+    tipo = StringField(choices=TIPO_CHOICES, default='P')
 
     def __str__(self):
         return f"{self.titulo} ({self.anio})"
 
-# 3. Modelo de VALORACIONES
-class Valoracion(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
-    elemento = models.ForeignKey(Elemento, on_delete=models.CASCADE, related_name='valoraciones')
-    puntuacion = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(5)],
-        help_text="Puntuación del 1 al 5"
-    )
-    comentario = models.TextField(blank=True, null=True)
-    fecha = models.DateTimeField(auto_now=True)
+# 3. Modelo de VALORACIONES (Fusionado y mejorado)
+class Valoracion(Document):
+    # IMPORTANTE: No podemos enlazar directamente con User (SQLite).
+    # Guardamos el ID del usuario como entero.
+    usuario_id = IntField(required=True)
 
-    class Meta:
-        unique_together = ('usuario', 'elemento')
+    elemento = ReferenceField(Elemento, reverse_delete_rule=CASCADE)
+
+    PUNTUACIONES = (
+        (1, '★☆☆☆☆ (Mala)'),
+        (2, '★★☆☆☆ (Regular)'),
+        (3, '★★★☆☆ (Buena)'),
+        (4, '★★★★☆ (Muy buena)'),
+        (5, '★★★★★ (Excelente)'),
+    )
+    puntuacion = IntField(choices=PUNTUACIONES, required=True)
+    comentario = StringField()
+    fecha = DateTimeField(default=datetime.datetime.now)
+
+    # Meta para evitar duplicados (unique_together en MongoEngine)
+    meta = {
+        'indexes': [
+            {'fields': ['usuario_id', 'elemento'], 'unique': True}
+        ]
+    }
 
     def __str__(self):
-        return f"{self.usuario.username} - {self.elemento.titulo}: {self.puntuacion}"
+        return f"Usuario {self.usuario_id} - Puntuación: {self.puntuacion}"
 
 # 4. Modelo de RANKINGS
-class Ranking(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
-    nombre = models.CharField(max_length=100, default="Mis Favoritos")
-    elementos = models.ManyToManyField(Elemento, related_name='rankings')
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+class Ranking(Document):
+    usuario_id = IntField(required=True)
+    nombre = StringField(max_length=100, default="Mis Favoritos")
+
+    # ManyToMany en Mongo se hace con una lista de referencias
+    elementos = ListField(ReferenceField(Elemento))
+
+    fecha_creacion = DateTimeField(default=datetime.datetime.now)
 
     def __str__(self):
-        return f"{self.nombre} de {self.usuario.username}"
+        return f"{self.nombre} (Usuario ID: {self.usuario_id})"

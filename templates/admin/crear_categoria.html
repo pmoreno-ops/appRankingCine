@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white py-3">
+                    <h4 class="mb-0 text-center">
+                        {% if editando %}
+                        <i class="bi bi-pencil-square"></i> Editar Categoría
+                        {% else %}
+                        <i class="bi bi-folder-plus"></i> Nueva Categoría
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="nombre" class="form-label fw-bold">Nombre</label>
+                                <input type="text" name="nombre" id="nombre" class="form-control"
+                                       placeholder="Ej: Terror, Comedia..." required
+                                       value="{{ categoria.nombre|default:'' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="descripcion" class="form-label fw-bold">Descripción</label>
+                            <textarea name="descripcion" id="descripcion" class="form-control"
+                                      rows="2">{{ categoria.descripcion|default:'' }}</textarea>
+                        </div>
+
+                        <hr>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold d-flex justify-content-between">
+                                <span><i class="bi bi-film"></i> Asignar Películas/Series</span>
+                                <span class="badge bg-secondary">Opcional</span>
+                            </label>
+                            <div class="alert alert-light border small text-muted">
+                                Selecciona los títulos que quieres añadir a esta categoría. Si pertenecían a otra, se moverán aquí.
+                            </div>
+
+                            <div class="border rounded p-3 bg-white" style="max-height: 300px; overflow-y: auto;">
+                                {% for item in elementos_disponibles %}
+                                <div class="form-check border-bottom py-2">
+
+                                    <input class="form-check-input" type="checkbox"
+                                           name="elementos_seleccionados"
+                                           value="{{ item.id }}"
+                                           id="el_{{ item.id }}"
+                                           {% if editando and item.categoria and categoria %}
+                                           {% if item.categoria.id|stringformat:"s" == categoria.id|stringformat:"s" %}checked{% endif %}
+                                    {% endif %}>
+
+                                    <label class="form-check-label w-100" for="el_{{ item.id }}" style="cursor: pointer;">
+                                        <strong>{{ item.titulo }}</strong>
+                                        <span class="text-muted small ms-2">({{ item.anio }})</span>
+
+                                        {% if item.categoria %}
+                                        {% if not editando or item.categoria.id|stringformat:"s" != categoria.id|stringformat:"s" %}
+                                        <span class="badge bg-light text-dark border ms-2 float-end">
+                                                    Actual: {{ item.categoria.nombre }}
+                                                </span>
+                                        {% endif %}
+                                        {% endif %}
+                                    </label>
+                                </div>
+                                {% empty %}
+                                <p class="text-center text-muted my-3">No hay elementos registrados aún.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-warning fw-bold text-dark btn-lg">
+                                {% if editando %}Guardar Cambios{% else %}Crear Categoría{% endif %}
+                            </button>
+                            <a href="{% url 'lista_categorias' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

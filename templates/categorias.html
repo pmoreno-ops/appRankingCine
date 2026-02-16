@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-dark">Explorar por Categorías</h1>
+        <p class="lead text-muted">Explora todo nuestro catálogo organizado por géneros.</p>
+        <hr class="mx-auto" style="width: 100px; height: 4px; background-color: #ffc107; border: none; border-radius: 10px;">
+
+        {% if user.is_authenticated and user.is_superuser %}
+        <div class="d-flex justify-content-center gap-3 mt-3">
+            <a href="{% url 'panel_ranking' %}" class="btn btn-outline-warning btn-sm fw-bold text-dark">
+                <i class="bi bi-trophy"></i> Gestionar Rankings
+            </a>
+            <a href="{% url 'crear_categoria' %}" class="btn btn-outline-dark btn-sm fw-bold">
+                <i class="bi bi-folder-plus"></i> Nueva Categoría
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% for categoria in categorias %}
+    <div class="category-section mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+            <div class="d-flex align-items-center">
+                <h2 class="fw-bold m-0 me-3">{{ categoria.nombre }}</h2>
+                <span class="badge rounded-pill bg-warning text-dark px-3 shadow-sm">
+                    {{ categoria.elementos_lista|length }} títulos
+                </span>
+            </div>
+
+            {% if user.is_authenticated and user.is_superuser %}
+            <div class="d-flex gap-2">
+                <a href="{% url 'crear_elemento' %}?categoria_id={{ categoria.id }}" class="btn btn-sm btn-warning fw-bold shadow-sm border-dark" title="Añadir nueva película/serie aquí">
+                    <i class="bi bi-plus-circle-fill"></i> Nuevo Item
+                </a>
+
+                <a href="{% url 'añadir_masivo_categoria' categoria.id %}" class="btn btn-sm btn-dark fw-bold shadow-sm" title="Mover elementos existentes a esta categoría">
+                    <i class="bi bi-collection-play-fill"></i> Mover
+                </a>
+
+                <a href="{% url 'editar_categoria' categoria.id %}" class="btn btn-sm btn-outline-primary shadow-sm" title="Editar nombre de categoría">
+                    <i class="bi bi-pencil-square"></i> Editar Cat.
+                </a>
+
+                <a href="{% url 'eliminar_categoria' categoria.id %}" class="btn btn-sm btn-outline-danger shadow-sm"
+                   onclick="return confirm('¿Estás seguro de eliminar la categoría \'{{ categoria.nombre }}\' y todos sus elementos?')" title="Eliminar categoría completa">
+                    <i class="bi bi-trash"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 g-4">
+            {% for item in categoria.elementos_lista %}
+            <div class="col">
+                <a href="{% url 'detalle' item.id %}" class="text-decoration-none text-dark">
+                    <div class="card h-100 border-0 shadow-sm hover-effect bg-white overflow-hidden" style="border-radius: 12px;">
+                        <div class="position-relative">
+                            <img src="{{ item.imagen_url }}" class="card-img-top" alt="{{ item.titulo }}"
+                                 style="height: 260px; object-fit: cover;"
+                                 onerror="this.src='https://via.placeholder.com/300x450?text=Sin+Imagen'">
+
+                            <div class="position-absolute top-0 start-0 m-2 d-flex gap-1">
+                                {% if user.is_authenticated and user.is_superuser %}
+                                <object>
+                                    <a href="{% url 'editar_elemento' item.id %}" class="badge bg-dark text-white p-2 shadow" title="Editar ficha">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </object>
+                                <object>
+                                    <a href="{% url 'eliminar_elemento' item.id %}" class="badge bg-danger text-white p-2 shadow"
+                                       onclick="return confirm('¿Eliminar {{ item.titulo }}?')" title="Eliminar elemento">
+                                        <i class="bi bi-x-lg"></i>
+                                    </a>
+                                </object>
+                                {% endif %}
+                            </div>
+
+                            <span class="position-absolute top-0 end-0 m-2 badge {% if item.tipo == 'P' %}bg-primary{% else %}bg-info{% endif %} shadow">
+                                {% if item.tipo == 'P' %}Película{% else %}Serie{% endif %}
+                            </span>
+                        </div>
+
+                        <div class="card-body p-2">
+                            <h6 class="card-title text-truncate mb-0 fw-bold" title="{{ item.titulo }}">
+                                {{ item.titulo }}
+                            </h6>
+                            <p class="text-muted mb-0 small">{{ item.anio }}</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-5">
+        <div class="mb-3">
+            <i class="bi bi-camera-reels display-1 text-muted"></i>
+        </div>
+        <h3 class="text-muted">Aún no hay categorías creadas.</h3>
+        {% if user.is_authenticated and user.is_superuser %}
+        <p>Como administrador, puedes empezar creando una.</p>
+        <a href="{% url 'crear_categoria' %}" class="btn btn-warning">Crear Categoría</a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .hover-effect { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); cursor: pointer; }
+    .hover-effect:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important; }
+    .category-section h2 { border-left: 5px solid #ffc107; padding-left: 15px; color: #212529; }
+    .card-img-top { background-color: #f0f0f0; }
+    .card .badge { text-decoration: none; transition: opacity 0.2s; }
+    .card .badge:hover { opacity: 0.9; color: white; }
+</style>
+{% endblock %}

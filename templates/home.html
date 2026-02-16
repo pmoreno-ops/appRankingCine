@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="py-4 text-center mb-4">
+    <h1 class="fw-black display-6">🎬 {{ titulo_pagina|default:"Cartelera" }}</h1>
+    {% if user.is_authenticated %}
+    <p class="text-muted">Bienvenido, {{ user.username }}</p>
+    {% endif %}
+</div>
+
+<div class="row justify-content-center mb-4">
+    <div class="col-md-6">
+        <form class="position-relative" method="get">
+            {% if categoria_activa %}
+            <input type="hidden" name="categoria" value="{{ categoria_activa.id }}">
+            {% endif %}
+            <input class="form-control form-control-lg rounded-pill ps-5 border-2"
+                   type="search" name="q" placeholder="Buscar..."
+                   value="{{ request.GET.q|default:'' }}">
+            <span class="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">🔍</span>
+        </form>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+        <a href="?{% if request.GET.q %}q={{ request.GET.q }}{% endif %}"
+           class="btn btn-sm rounded-pill px-3 {% if not categoria_activa %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            Todas
+        </a>
+
+        {% for cat in categorias %}
+        <a href="?categoria={{ cat.id }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+           class="btn btn-sm rounded-pill px-3 {% if categoria_activa.id == cat.id %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+            {{ cat.nombre }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    {% for item in elementos %}
+    <div class="col">
+        <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+            <div class="position-relative overflow-hidden rounded-top">
+                {% if item.imagen_url %}
+                <img src="{{ item.imagen_url }}" class="card-img-top" alt="{{ item.titulo }}" style="height: 320px; object-fit: cover;">
+                {% else %}
+                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 320px;">
+                    <span class="text-muted">Sin imagen</span>
+                </div>
+                {% endif %}
+
+                {% if item.categoria %}
+                <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75">
+                    {{ item.categoria.nombre }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <h6 class="card-title fw-bold text-truncate">{{ item.titulo }}</h6>
+                <p class="small text-muted mb-2">{{ item.anio }} | {{ item.director|truncatechars:15 }}</p>
+                <a href="{% url 'detalle' item.id %}" class="btn btn-outline-primary btn-sm w-100 rounded-pill stretched-link">
+                    Ver Ficha
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <h4>No se encontraron resultados 🕵️</h4>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .hover-shadow:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; transition: all 0.3s; }
+</style>
+{% endblock %}

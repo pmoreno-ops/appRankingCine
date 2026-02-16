@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+
+    <div class="text-center mb-5">
+        <h1 class="fw-black display-5 mb-3">🏆 Salón de la Fama</h1>
+
+        <div class="d-inline-flex bg-light rounded-pill p-1 border shadow-sm">
+            <a href="?tipo=P"
+               class="btn rounded-pill px-4 fw-bold {% if tipo_actual == 'P' %}btn-primary shadow{% else %}btn-light text-muted{% endif %}">
+                🎬 Películas
+            </a>
+
+            <a href="?tipo=S"
+               class="btn rounded-pill px-4 fw-bold {% if tipo_actual == 'S' %}btn-primary shadow{% else %}btn-light text-muted{% endif %}">
+                📺 Series
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg overflow-hidden">
+                <div class="list-group list-group-flush">
+
+                    {% for item in ranking %}
+                    <div class="list-group-item p-3 d-flex align-items-center hover-effect transition-all">
+
+                        <div class="me-4 text-center fw-bold" style="width: 40px;">
+                            {% if forloop.counter == 1 %}
+                            <span class="fs-1">🥇</span>
+                            {% elif forloop.counter == 2 %}
+                            <span class="fs-1">🥈</span>
+                            {% elif forloop.counter == 3 %}
+                            <span class="fs-1">🥉</span>
+                            {% else %}
+                            <span class="fs-4 text-secondary">#{{ forloop.counter }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="me-3 d-none d-sm-block">
+                            {% if item.elemento.imagen_url %}
+                            <img src="{{ item.elemento.imagen_url }}"
+                                 class="rounded-3 shadow-sm"
+                                 style="width: 50px; height: 75px; object-fit: cover;"
+                                 alt="{{ item.elemento.titulo }}">
+                            {% else %}
+                            <div class="bg-light rounded-3 d-flex align-items-center justify-content-center"
+                                 style="width: 50px; height: 75px;">🎬</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold mb-1 text-truncate">
+                                <a href="{% url 'detalle' item.elemento.id %}" class="text-decoration-none text-dark stretched-link">
+                                    {{ item.elemento.titulo }}
+                                </a>
+                            </h5>
+                            <div class="small text-muted">
+                                <span class="badge bg-light text-dark border me-1">{{ item.elemento.categoria.nombre }}</span>
+                                {{ item.elemento.anio }}
+                            </div>
+                        </div>
+
+                        <div class="text-end ms-3">
+                            <div class="bg-warning text-dark px-3 py-1 rounded-pill fw-bold shadow-sm d-inline-flex align-items-center">
+                                <span class="me-1">★</span> {{ item.promedio }}
+                            </div>
+                            <div class="small text-muted mt-1" style="font-size: 0.7rem;">
+                                {{ item.total_votos }} votos
+                            </div>
+                        </div>
+
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <div class="mb-3 fs-1">📉</div>
+                        <h4 class="text-muted">Aún no hay valoraciones para esta categoría.</h4>
+                        <p>¡Sé el primero en votar!</p>
+                        <a href="{% url 'home' %}" class="btn btn-outline-primary mt-2">Ir a votar</a>
+                    </div>
+                    {% endfor %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-effect:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.01);
+        z-index: 10;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .transition-all {
+        transition: all 0.2s ease;
+    }
+</style>
+{% endblock %}

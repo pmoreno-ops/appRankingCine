@@ -1,0 +1,26 @@
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Categoría</th>
+        <th class="text-center">Películas/Series</th>
+        <th class="text-center">Promedio Valoraciones</th> </tr>
+    </thead>
+    <tbody>
+    {% for dato in datos_categorias %}
+    <tr>
+        <td>{{ dato.nombre }}</td>
+        <td class="text-center">{{ dato.cantidad }}</td>
+
+        <td class="text-center">
+            {% if dato.promedio > 0 %}
+            <span class="badge bg-warning text-dark">
+                        {{ dato.promedio }} <i class="bi bi-star-fill"></i>
+                    </span>
+            {% else %}
+            <span class="text-muted small">Sin votos</span>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>

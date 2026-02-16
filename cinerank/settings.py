@@ -4,6 +4,7 @@ Django settings for cinerank project.
 
 from pathlib import Path
 import os
+import mongoengine
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -66,6 +67,14 @@ WSGI_APPLICATION = 'cinerank.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # CONFIGURACIÓN SQLITE (Estable y compatible con tu versión actual)
+#DATABASES = {
+#'default': {
+#   'ENGINE': 'django.db.backends.sqlite3',
+#   'NAME': BASE_DIR / 'db.sqlite3',
+# }
+#}
+
+# 1. Mantén SQLite SOLO para que el sistema de usuarios de Django no se queje
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -73,6 +82,13 @@ DATABASES = {
     }
 }
 
+# 3. Conecta a MongoDB directamente con MongoEngine
+# Esto va al final de tu settings.py
+mongoengine.connect(
+    db='peliculas_db',
+    host='localhost',
+    port=27017
+)
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -116,3 +132,7 @@ STATICFILES_DIRS = [
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Al final de settings.py
+LOGIN_REDIRECT_URL = '/'  # Al entrar, ir a la portada
+LOGOUT_REDIRECT_URL = '/' # Al salir, ir a la portada

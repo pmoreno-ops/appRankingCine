@@ -1,26 +1,59 @@
-<table class="table table-striped">
-    <thead>
-    <tr>
-        <th>Categoría</th>
-        <th class="text-center">Películas/Series</th>
-        <th class="text-center">Promedio Valoraciones</th> </tr>
-    </thead>
-    <tbody>
-    {% for dato in datos_categorias %}
-    <tr>
-        <td>{{ dato.nombre }}</td>
-        <td class="text-center">{{ dato.cantidad }}</td>
+{% extends 'base.html' %}
 
-        <td class="text-center">
-            {% if dato.promedio > 0 %}
-            <span class="badge bg-warning text-dark">
-                        {{ dato.promedio }} <i class="bi bi-star-fill"></i>
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4"><i class="bi bi-bar-chart-fill text-primary"></i> Estadísticas Globales</h2>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-primary text-white text-center p-3 shadow-sm">
+                <h4>Total de Películas/Series</h4>
+                <h2 class="fw-bold">{{ total_elementos }}</h2>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-success text-white text-center p-3 shadow-sm">
+                <h4>Total de Valoraciones de Usuarios</h4>
+                <h2 class="fw-bold">{{ total_valoraciones }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <h4 class="fw-bold border-bottom pb-2">Promedio por Categoría</h4>
+            <ul class="list-group shadow-sm">
+                {% for cat in datos_categorias %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ cat.nombre }} ({{ cat.cantidad }} elementos)
+                    <span class="badge bg-warning text-dark rounded-pill fs-6">
+                        <i class="bi bi-star-fill"></i> {{ cat.promedio }}
                     </span>
-            {% else %}
-            <span class="text-muted small">Sin votos</span>
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-</table>
+                </li>
+                {% empty %}
+                <li class="list-group-item">No hay categorías registradas.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <h4 class="fw-bold border-bottom pb-2">Top 10 Mejor Valorados</h4>
+            <ol class="list-group list-group-numbered shadow-sm">
+                {% for item in top_elementos %}
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                        <div class="fw-bold">{{ item.elemento.titulo }}</div>
+                        <small class="text-muted">{{ item.votos }} votos totales</small>
+                    </div>
+                    <span class="badge bg-danger rounded-pill fs-6">
+                        {{ item.promedio }} <i class="bi bi-star-fill"></i>
+                    </span>
+                </li>
+                {% empty %}
+                <li class="list-group-item">Aún no hay elementos valorados.</li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}

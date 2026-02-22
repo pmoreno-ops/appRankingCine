@@ -167,6 +167,7 @@ def lista_categorias(request):
 # --- VISTAS DE RANKINGS PERSONALES ---
 @login_required
 def mis_rankings(request):
+    # REQUISITO 27: Crear un nuevo ranking personal
     rankings = Ranking.objects(usuario_id=request.user.id)
 
     if request.method == 'POST':
@@ -187,55 +188,107 @@ def agregar_a_ranking(request, id_elemento):
     if request.method == 'POST':
         try:
             elemento = Elemento.objects.get(id=id_elemento)
+
+            # Validamos que el usuario ya haya valorado este elemento
+            valoracion = Valoracion.objects(usuario_id=request.user.id, elemento=elemento).first()
+            if not valoracion:
+                messages.error(request, f"Debes valorar '{elemento.titulo}' antes de añadirlo a tu ranking.")
+                return redirect('detalle', elemento_id=id_elemento)
+
             ranking_id = request.POST.get('ranking_id')
             ranking = Ranking.objects.get(id=ranking_id, usuario_id=request.user.id)
 
+            # Comprobamos que no esté ya en la lista
             if elemento not in ranking.elementos:
                 ranking.elementos.append(elemento)
                 ranking.save()
-                messages.success(request, f"Añadido a {ranking.nombre}")
+                messages.success(request, f"¡Añadido a tu ranking: {ranking.nombre}!")
             else:
-                messages.info(request, "Ya está en tu lista.")
+                messages.info(request, "Ya tenías este elemento en tu ranking.")
+
         except Exception as e:
-            messages.error(request, "No se pudo añadir a la lista.")
+            messages.error(request, "Hubo un error al añadir el elemento.")
+
     return redirect('detalle', elemento_id=id_elemento)
 
 
-# --- VISTAS ADMIN ---
-@user_passes_test(lambda u: u.is_superuser)
+@login_required
+def detalle_ranking_personal(request, ranking_id):
+    try:
+        ranking = Ranking.objects.get(id=ranking_id, usuario_id=request.user.id)
+
+        # BLINDAJE: Nos aseguramos de extraer los objetos completos con todos sus datos
+        elementos_completos = []
+        for el in ranking.elementos:
+            if hasattr(el, 'titulo'): # Si ya es el objeto completo
+                elementos_completos.append(el)
+            else: # Si MongoEngine guardó solo el ID, lo buscamos
+                try:
+                    obj = Elemento.objects.get(id=el)
+                    elementos_completos.append(obj)
+                except DoesNotExist:
+                    continue
+
+    except DoesNotExist:
+        messages.error(request, "El ranking no existe o no es tuyo.")
+        return redirect('mis_rankings')
+
+    return render(request, 'detalle_ranking.html', {
+        'ranking': ranking,
+        'elementos_reales': elementos_completos
+    })
+
+# --- Panel Estadisticas ---
 def panel_estadisticas(request):
+    # REQUISITO 33: Mostrar número total de valoraciones
+    total_valoraciones = Valoracion.objects.count()
+
+    # REQUISITO 32: Promedio de puntuaciones por categoría
     datos_categorias = []
     categorias = Categoria.objects.all()
 
     for cat in categorias:
         elementos = Elemento.objects(categoria=cat)
         cantidad = elementos.count()
-
-        # --- CÁLCULO DEL PROMEDIO (Nuevo requisito RF9) ---
         total_puntos = 0
         total_votos = 0
 
-        # Recorremos los elementos de esta categoría para sumar sus valoraciones
         for el in elementos:
-            # Obtenemos valoraciones de este elemento
             vals = Valoracion.objects(elemento=el)
             if vals:
-                # Sumamos puntos y cantidad de votos
                 total_puntos += vals.sum('puntuacion')
                 total_votos += vals.count()
 
-        # Evitamos división por cero
         promedio_cat = round(total_puntos / total_votos, 1) if total_votos > 0 else 0.0
 
         datos_categorias.append({
             'nombre': cat.nombre,
             'cantidad': cantidad,
-            'promedio': promedio_cat  # Enviamos el dato al template
+            'promedio': promedio_cat
         })
+
+    # REQUISITO 31: Mostrar elementos más valorados (Top 10 Global)
+    todos_elementos = Elemento.objects.all()
+    lista_top = []
+
+    for el in todos_elementos:
+        vals = Valoracion.objects(elemento=el)
+        promedio = vals.average('puntuacion')
+        if promedio:
+            lista_top.append({
+                'elemento': el,
+                'promedio': round(promedio, 1),
+                'votos': vals.count()
+            })
+
+    # Ordenamos de mayor a menor promedio (y por número de votos si hay empate)
+    top_elementos = sorted(lista_top, key=lambda x: (x['promedio'], x['votos']), reverse=True)[:10]
 
     return render(request, 'estadisticas.html', {
         'total_elementos': Elemento.objects.count(),
-        'datos_categorias': datos_categorias
+        'total_valoraciones': total_valoraciones, # Pasamos el total (Req 33)
+        'datos_categorias': datos_categorias,     # Pasamos las categorías (Req 32)
+        'top_elementos': top_elementos            # Pasamos el Top 10 (Req 31)
     })
 
 # Crear Elemento (Película o Serie)
@@ -412,24 +465,45 @@ def editar_elemento(request, elemento_id):
         form = ElementoForm(request.POST)
         if form.is_valid():
             # Actualizamos los campos manualmente
-            elemento.tipo = form.cleaned_data['tipo']
-            elemento.titulo = form.cleaned_data['titulo']
-            elemento.imagen_url = form.cleaned_data['imagen_url']
-            elemento.descripcion = form.cleaned_data['descripcion']
-            elemento.anio = form.cleaned_data['anio']
-            elemento.categoria = form.cleaned_data['categoria']
+            elemento.tipo = form.cleaned_data.get('tipo', elemento.tipo)
+            elemento.titulo = form.cleaned_data.get('titulo', elemento.titulo)
+            elemento.imagen_url = form.cleaned_data.get('imagen_url', elemento.imagen_url)
+            elemento.descripcion = form.cleaned_data.get('descripcion', elemento.descripcion)
+            elemento.anio = form.cleaned_data.get('anio', elemento.anio)
+
+            # También actualizamos director y actores (reparto) si existen en tu form
+            if 'director' in form.cleaned_data:
+                elemento.director = form.cleaned_data['director']
+            if 'reparto' in form.cleaned_data:
+                elemento.actores = form.cleaned_data['reparto']
+
+            # Si modificaste el orden manualmente en el formulario
+            if 'orden' in form.cleaned_data:
+                elemento.orden = form.cleaned_data['orden']
+
+            # --- LA CORRECCIÓN ESTÁ AQUÍ ---
+            # En lugar de guardar el texto directo, buscamos el objeto Categoria real
+            categoria_id = form.cleaned_data.get('categoria')
+            if categoria_id:
+                categoria_obj = Categoria.objects(id=categoria_id).first()
+                if categoria_obj:
+                    elemento.categoria = categoria_obj
+
             elemento.save()
 
             messages.success(request, f"'{elemento.titulo}' actualizado correctamente.")
             return redirect('lista_categorias')
     else:
-        # AQUÍ ESTÁ EL CAMBIO: Pasamos los datos actuales al formulario
+        # Pasamos los datos actuales al formulario
         initial_data = {
             'tipo': elemento.tipo,
             'titulo': elemento.titulo,
-            'imagen_url': elemento.imagen_url,
-            'descripcion': elemento.descripcion,
-            'anio': elemento.anio,
+            'imagen_url': getattr(elemento, 'imagen_url', ''),
+            'descripcion': getattr(elemento, 'descripcion', ''),
+            'anio': getattr(elemento, 'anio', ''),
+            'director': getattr(elemento, 'director', ''),
+            'reparto': getattr(elemento, 'actores', ''),
+            'orden': getattr(elemento, 'orden', 0),
             'categoria': str(elemento.categoria.id) if elemento.categoria else None,
         }
         form = ElementoForm(initial=initial_data)
@@ -467,7 +541,7 @@ def añadir_masivo_categoria(request, categoria_id):
     })
 
 
-@user_passes_test(lambda u: u.is_superuser)
+@login_required
 def panel_ranking(request):
     # 1. Traemos todo de la base de datos
     categorias = list(Categoria.objects.all())
@@ -498,7 +572,7 @@ def panel_ranking(request):
 
     return render(request, 'admin/panel_ranking.html', {'categorias': categorias})
 
-@user_passes_test(lambda u: u.is_superuser)
+@login_required
 def cambiar_ranking(request, item_id, accion):
     elemento = Elemento.objects(id=item_id).first()
     if elemento:
@@ -510,7 +584,6 @@ def cambiar_ranking(request, item_id, accion):
 
     # Esto te devuelve al panel y refresca la lista con el nuevo orden
     return redirect('panel_ranking')
-
 
 # --- AUTENTICACIÓN ---
 def registro(request):

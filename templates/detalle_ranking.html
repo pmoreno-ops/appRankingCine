@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="fw-bold"><i class="bi bi-trophy-fill text-warning"></i> {{ ranking.nombre }}</h2>
+            <p class="text-muted">Tu ranking personal.</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'mis_rankings' %}" class="btn btn-outline-secondary">Volver a mis rankings</a>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for elemento in elementos_reales %}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100 shadow-sm">
+                <img src="{{ elemento.imagen_url }}" class="card-img-top" alt="{{ elemento.titulo }}" style="height: 350px; object-fit: cover;">
+                <div class="card-body text-center">
+                    <h5 class="card-title fw-bold">{{ elemento.titulo }}</h5>
+                    <p class="text-muted">{{ elemento.anio }}</p>
+                    <a href="{% url 'detalle' elemento.id %}" class="btn btn-sm btn-primary">Ver detalle</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <h5 class="text-muted">Aún no has añadido nada a este ranking.</h5>
+            <p>Recuerda: ve a una película, ponle una nota y luego añádela aquí.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

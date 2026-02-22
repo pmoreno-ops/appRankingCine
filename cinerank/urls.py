@@ -18,6 +18,9 @@ urlpatterns = [
 
     path('mis-listas/', views.mis_rankings, name='mis_rankings'),
     path('agregar-a-ranking/<id_elemento>/', views.agregar_a_ranking, name='agregar_a_ranking'),
+    path('mis-listas/<str:ranking_id>/', views.detalle_ranking_personal, name='detalle_ranking_personal'),
+
+    path('estadisticas/', views.panel_estadisticas, name='estadisticas'),
 
 
     # MongoDB usa IDs alfanuméricos, así que usamos 'str' en lugar de 'int'

@@ -46,16 +46,27 @@
 
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link fs-5 px-3" href="{% url 'home' %}">Películas 🎬</a>
+                    <a class="nav-link fs-5 px-3 d-flex align-items-center gap-2" href="{% url 'home' %}">Películas</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link fs-5 px-3" href="{% url 'series' %}">Series 📺</a>
+                    <a class="nav-link fs-5 px-3 d-flex align-items-center gap-2" href="{% url 'series' %}">Series</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link fs-5 px-3" href="{% url 'lista_categorias' %}">Categorías 📁</a>
+                    <a class="nav-link fs-5 px-3 d-flex align-items-center gap-2" href="{% url 'lista_categorias' %}">Categorías</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link fs-5 px-3 fw-bold text-warning" href="{% url 'ranking_global' %}">Ranking 🏆</a>
+                    <a class="nav-link fw-bold text-warning d-flex align-items-center gap-2" href="{% url 'ranking_global' %}">🏆 Ranking Global </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-warning d-flex align-items-center gap-2" href="{% url 'panel_ranking' %}">
+                        <i class="bi bi-trophy-fill"></i> Ranking por Género
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center gap-2" href="{% url 'estadisticas' %}">
+                        <i class="bi bi-bar-chart-line-fill"></i>
+                        <span>Estadísticas</span>
+                    </a>
                 </li>
             </ul>
 
@@ -84,9 +95,9 @@
                         {{ user.username }}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow">
-                        <li>
+                        <li class="nav-item">
                             <a class="dropdown-item fw-bold" href="{% url 'mis_rankings' %}">
-                                📂 Mis Listas
+                                <i class="bi bi-star-fill"></i> Mis Rankings
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>

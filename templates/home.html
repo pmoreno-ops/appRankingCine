@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="py-4 text-center mb-4">
-    <h1 class="fw-black display-6">🎬 {{ titulo_pagina|default:"Cartelera" }}</h1>
+    <h1 class="fw-black display-6">{{ titulo_pagina|default:"Cartelera" }}</h1>
     {% if user.is_authenticated %}
     <p class="text-muted">Bienvenido, {{ user.username }}</p>
     {% endif %}
